@@ -4,21 +4,22 @@
  * Copyright (c) Noah Kolossa
  */
 
-#ifdef _WIN32
-#pragma warning (disable : 4100)  /* Disable Unreferenced parameter warning */
+#if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
+#pragma warning(disable : 4100) /* Disable Unreferenced parameter warning */
 #include <Windows.h>
 #endif
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+
+#include "teamspeak/public_definitions.h"
 #include "teamspeak/public_errors.h"
 #include "teamspeak/public_errors_rare.h"
-#include "teamspeak/public_definitions.h"
 #include "teamspeak/public_rare_definitions.h"
-#include "teamspeak/clientlib_publicdefinitions.h"
 #include "ts3_functions.h"
+
 #include "plugin.h"
 
 static struct TS3Functions ts3Functions;
@@ -33,7 +34,7 @@ static anyID followerId;
 #define _strcpy(dest, destSize, src) { strncpy(dest, src, destSize-1); (dest)[destSize-1] = '\0'; }
 #endif
 
-#define PLUGIN_API_VERSION 23
+#define PLUGIN_API_VERSION 26
 
 #define PATH_BUFSIZE 512
 #define COMMAND_BUFSIZE 128
@@ -81,7 +82,7 @@ const char* ts3plugin_name() {
 
 /* Plugin version */
 const char* ts3plugin_version() {
-	return "1.1";
+	return "1.2";
 }
 
 /* Plugin API version. Must be the same as the clients API major version, else the plugin fails to load. */
@@ -141,7 +142,7 @@ void ts3plugin_shutdown() {
 	 * TeamSpeak client will most likely crash (DLL removed but dialog from DLL code still open).
 	 */
 
-	 /* Free pluginID if we registered it */
+    /* Free pluginID if we registered it */
 	if (pluginID) {
 		free(pluginID);
 		pluginID = NULL;
@@ -153,7 +154,7 @@ void ts3plugin_shutdown() {
  * Following functions are optional, if not needed you don't need to implement them.
  */
 
- /* Tell client if plugin offers a configuration window. If this function is not implemented, it's an assumed "does not offer" (PLUGIN_OFFERS_NO_CONFIGURE). */
+/* Tell client if plugin offers a configuration window. If this function is not implemented, it's an assumed "does not offer" (PLUGIN_OFFERS_NO_CONFIGURE). */
 int ts3plugin_offersConfigure() {
 	/*
 	 * Return values:
@@ -176,7 +177,7 @@ void ts3plugin_configure(void* handle, void* qParentWidget) {
 void ts3plugin_registerPluginID(const char* id) {
 	const size_t sz = strlen(id) + 1;
 	pluginID = (char*)malloc(sz * sizeof(char));
-	_strcpy(pluginID, sz, id);  /* The id buffer will invalidate after exiting this function */
+	_strcpy(pluginID, sz, id); /* The id buffer will invalidate after exiting this function */
 }
 
 /* Plugin command keyword. Return NULL or "" if not used. */
@@ -184,15 +185,13 @@ const char* ts3plugin_commandKeyword() {
 	return "";
 }
 
-static void print_and_free_bookmarks_list(struct PluginBookmarkList* list)
-{
+static void print_and_free_bookmarks_list(struct PluginBookmarkList* list) {
 	int i;
 	for (i = 0; i < list->itemcount; ++i) {
 		if (list->items[i].isFolder) {
 			print_and_free_bookmarks_list(list->items[i].folder);
 			ts3Functions.freeMemory(list->items[i].name);
-		}
-		else {
+		} else {
 			ts3Functions.freeMemory(list->items[i].name);
 			ts3Functions.freeMemory(list->items[i].uuid);
 		}
@@ -202,7 +201,7 @@ static void print_and_free_bookmarks_list(struct PluginBookmarkList* list)
 
 /* Plugin processes console command. Return 0 if plugin handled the command, 1 if not handled. */
 int ts3plugin_processCommand(uint64 serverConnectionHandlerID, const char* command) {
-	return 0;  /* Plugin handled command */
+	return 0; /* Plugin handled command */
 }
 
 /* Client changed current server connection handler */
@@ -274,12 +273,12 @@ void ts3plugin_initMenus(struct PluginMenuItem*** menuItems, char** menuIcon) {
 	 * e.g. for "test_plugin.dll", icon "1.png" is loaded from <TeamSpeak 3 Client install dir>\plugins\test_plugin\1.png
 	 */
 
-	BEGIN_CREATE_MENUS(4);  /* IMPORTANT: Number of menu items must be correct! */
+	BEGIN_CREATE_MENUS(4); /* IMPORTANT: Number of menu items must be correct! */
 	CREATE_MENU_ITEM(PLUGIN_MENU_TYPE_GLOBAL, MENU_GLOBAL_ACTIVATE, "Activate", "");
 	CREATE_MENU_ITEM(PLUGIN_MENU_TYPE_GLOBAL, MENU_GLOBAL_DEACTIVATE, "Deactivate", "");
 	CREATE_MENU_ITEM(PLUGIN_MENU_TYPE_CLIENT, MENU_CLIENT_FOLLOW, "Follow", "");
 	CREATE_MENU_ITEM(PLUGIN_MENU_TYPE_CLIENT, MENU_CLIENT_UNFOLLOW, "Unfollow", "");
-	END_CREATE_MENUS;  /* Includes an assert checking if the number of menu items matched */
+	END_CREATE_MENUS; /* Includes an assert checking if the number of menu items matched */
 
 	/*
 	 * Specify an optional icon for the plugin. This icon is used for the plugins submenu within context and main menus
@@ -322,7 +321,7 @@ void ts3plugin_initHotkeys(struct PluginHotkey*** hotkeys) {
 	/* Register hotkeys giving a keyword and a description.
 	 * The keyword will be later passed to ts3plugin_onHotkeyEvent to identify which hotkey was triggered.
 	 * The description is shown in the clients hotkey dialog. */
-	BEGIN_CREATE_HOTKEYS(0);  /* Create 0 hotkeys. Size must be correct for allocating memory. */
+	BEGIN_CREATE_HOTKEYS(0); /* Create 0 hotkeys. Size must be correct for allocating memory. */
 	END_CREATE_HOTKEYS;
 
 	/* The client will call ts3plugin_freeMemory to release all allocated memory */
@@ -357,7 +356,7 @@ void try_follow_client(uint64 serverConnectionHandlerID, anyID clientID, uint64 
  * See the clientlib documentation for details on each function.
  */
 
- /* Clientlib */
+/* Clientlib */
 
 void ts3plugin_onConnectStatusChangeEvent(uint64 serverConnectionHandlerID, int newStatus, unsigned int errorNumber) {
 }
@@ -424,14 +423,14 @@ int ts3plugin_onServerErrorEvent(uint64 serverConnectionHandlerID, const char* e
 		 * 1: Client will ignore this error, the plugin announces it has handled it */
 		return 1;
 	}
-	return 0;  /* If no plugin return code was used, the return value of this function is ignored */
+	return 0; /* If no plugin return code was used, the return value of this function is ignored */
 }
 
 void ts3plugin_onServerStopEvent(uint64 serverConnectionHandlerID, const char* shutdownMessage) {
 }
 
 int ts3plugin_onTextMessageEvent(uint64 serverConnectionHandlerID, anyID targetMode, anyID toID, anyID fromID, const char* fromName, const char* fromUniqueIdentifier, const char* message, int ffIgnored) {
-	return 0;  /* 0 = handle normally, 1 = client will ignore the text message */
+	return 0; /* 0 = handle normally, 1 = client will ignore the text message */
 }
 
 void ts3plugin_onTalkStatusChangeEvent(uint64 serverConnectionHandlerID, int status, int isReceivedWhisper, anyID clientID) {
@@ -624,14 +623,14 @@ void ts3plugin_onClientNamefromDBIDEvent(uint64 serverConnectionHandlerID, const
 void ts3plugin_onComplainListEvent(uint64 serverConnectionHandlerID, uint64 targetClientDatabaseID, const char* targetClientNickName, uint64 fromClientDatabaseID, const char* fromClientNickName, const char* complainReason, uint64 timestamp) {
 }
 
-void ts3plugin_onBanListEvent(uint64 serverConnectionHandlerID, uint64 banid, const char* ip, const char* name, const char* uid, uint64 creationTime, uint64 durationTime, const char* invokerName,
+void ts3plugin_onBanListEvent(uint64 serverConnectionHandlerID, uint64 banid, const char* ip, const char* name, const char* uid, const char* mytsid, uint64 creationTime, uint64 durationTime, const char* invokerName,
 	uint64 invokercldbid, const char* invokeruid, const char* reason, int numberOfEnforcements, const char* lastNickName) {
 }
 
 void ts3plugin_onClientServerQueryLoginPasswordEvent(uint64 serverConnectionHandlerID, const char* loginPassword) {
 }
 
-void ts3plugin_onPluginCommandEvent(uint64 serverConnectionHandlerID, const char* pluginName, const char* pluginCommand) {
+void ts3plugin_onPluginCommandEvent(uint64 serverConnectionHandlerID, const char* pluginName, const char* pluginCommand, anyID invokerClientID, const char* invokerName, const char* invokerUniqueIdentity) {
 }
 
 void ts3plugin_onIncomingClientQueryEvent(uint64 serverConnectionHandlerID, const char* commandText) {
@@ -686,7 +685,7 @@ void ts3plugin_onMenuItemEvent(uint64 serverConnectionHandlerID, enum PluginMenu
 					break;
 				case MENU_CLIENT_UNFOLLOW:
 					/* Client unfollow was triggered */
-					followerId = NULL;
+					followerId = -1;
 
 					break;
 				default:

@@ -8,4 +8,4 @@ Follow clients with just a few clicks.
 - Required header files
 - Clientlib documentation
 
-Release files can be found under https://www.myteamspeak.com/addons/986a22f2-826b-45f1-a53c-931d72b10446
+Old releases from the original author can be found under https://www.myteamspeak.com/addons/L2FkZG9ucy85ODZhMjJmMi04MjZiLTQ1ZjEtYTUzYy05MzFkNzJiMTA0NDY
